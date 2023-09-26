@@ -340,8 +340,8 @@ export class UserController {
     strategy: 'jwt',
     options: {required: [PermissionKeys.SALES]},
   })
-  @get('/api/testVoucherParsing')
-  async testVoucherParsing(): Promise<any> {
+  @get('/api/getTallyVouchers')
+  async getTallyVouchers(): Promise<any> {
     try {
       const readFileAsync = promisify(fs.readFile);
       const tallyXml = await readFileAsync('./public/response.xml', 'utf-8');

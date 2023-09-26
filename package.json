@@ -76,6 +76,7 @@
     "typescript": "~4.9.4",
     "@types/nodemailer": "^6.4.7",
     "@types/xml2js": "^0.4.11",
-    "tsc-watch": "^6.0.4"
+    "tsc-watch": "^6.0.4",
+    "dotenv": "^16.0.3"
   }
 }

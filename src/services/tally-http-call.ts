@@ -7,6 +7,7 @@ export class TallyHttpCallService {
   constructor() {}
 
   postTallyXML(msg: any) {
+    console.log(process.env.TALLY_HOST);
     return new Promise((resolve, reject) => {
       try {
         const req = http.request(
@@ -53,6 +54,7 @@ export class TallyHttpCallService {
         if (err) {
           reject(err);
         } else {
+          console.log(result);
           const envelope =
             result.ENVELOPE.BODY[0].DATA[0].COLLECTION[0].COMPANY[0];
           const finalActiveCompanyData = {
