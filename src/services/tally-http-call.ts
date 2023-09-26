@@ -1,14 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/prefer-for-of */
 import http from 'http';
-import {parseString, parseStringPromise} from 'xml2js';
-import {
-  Ledger,
-  ParsedObject,
-  ParsedResponse,
-  Product,
-  Voucher,
-} from '../utils/constants';
+import {parseString} from 'xml2js';
 
 export class TallyHttpCallService {
   constructor() {}
@@ -54,75 +47,6 @@ export class TallyHttpCallService {
     });
   }
 
-  parseXmlToObjects(xmlData: string): Promise<Product[]> {
-    return new Promise((resolve, reject) => {
-      parseString(xmlData, (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          const envelope = result.ENVELOPE;
-          const productArray = [];
-
-          const numProducts = envelope.GUID.length;
-
-          for (let i = 0; i < numProducts; i++) {
-            const product: Product = {
-              GUID: envelope.GUID[i],
-              ALTERID: envelope.ALTERID[i],
-              NAME: envelope.NAME[i],
-              PARENT: envelope.PARENT[i],
-              _PARENT: envelope._PARENT[i],
-              ALIAS: envelope.ALIAS[i],
-              UOM: envelope.UOM[i],
-              _UOM: envelope._UOM[i],
-              OPENINGBALANCE: envelope.OPENINGBALANCE[i],
-              OPENINGRATE: envelope.OPENINGRATE[i],
-              OPENINGVALUE: envelope.OPENINGVALUE[i],
-              NATUREOFGOODS: envelope.NATUREOFGOODS[i],
-              HSNCODE: envelope.HSNCODE[i],
-              TAXABILITY: envelope.TAXABILITY[i],
-            };
-            productArray.push(product);
-          }
-          resolve(productArray);
-        }
-      });
-    });
-  }
-
-  async parseLedgerData(xmlData: string): Promise<Ledger[]> {
-    const parsedData = await parseStringPromise(xmlData, {
-      explicitArray: false,
-    });
-    const collection = parsedData.ENVELOPE.BODY.DATA.COLLECTION;
-
-    if (!collection) {
-      return [];
-    }
-
-    const ledgersData = collection.LEDGER;
-    const ledgers: Ledger[] = [];
-
-    if (!Array.isArray(ledgersData)) {
-      // If there is only one ledger, convert it to an array
-      ledgers.push(this.convertLedgerToObject(ledgersData));
-    } else {
-      ledgersData.forEach((ledgerData: any) => {
-        ledgers.push(this.convertLedgerToObject(ledgerData));
-      });
-    }
-
-    return ledgers;
-  }
-
-  convertLedgerToObject(ledger: any): Ledger {
-    return {
-      name: ledger.$.NAME,
-      guid: ledger.GUID._,
-      openingBalance: parseFloat(ledger.OPENINGBALANCE._),
-    };
-  }
-
   parseActiveCompany(xmlData: string): Promise<any> {
     return new Promise((resolve, reject) => {
       parseString(xmlData, (err, result) => {
@@ -145,189 +69,136 @@ export class TallyHttpCallService {
     });
   }
 
-  parseVoucherToObjects(xmlData: string): Promise<Voucher[]> {
+  parseVouchers(xmlData: any): Promise<any> {
     return new Promise((resolve, reject) => {
       parseString(xmlData, (err, result) => {
         if (err) {
-          reject(err);
-        } else {
-          const envelope = result.ENVELOPE;
-          const voucherArray = [];
-
-          const numVouchers = envelope.GUID.length;
-          for (let i = 0; i < numVouchers; i++) {
-            const voucher: Voucher = {
-              GUID: envelope.GUID[i],
-              ALTERID: envelope.ALTERID[i],
-              DATE: envelope.DATE[i],
-              VOUCHER_TYPE: envelope.VOUCHER_TYPE[i],
-              _VOUCHER_TYPE: envelope._VOUCHER_TYPE[i],
-              VOUCHER_NUMBER: envelope.VOUCHER_NUMBER[i],
-              REFERENCE_NUMBER: envelope.REFERENCE_NUMBER[i],
-              REFERENCE_DATE: envelope.REFERENCE_DATE[i],
-              NARRATION: envelope.NARRATION[i],
-              PARTY_NAME: envelope.PARTY_NAME[i],
-              _PARTY_NAME: envelope._PARTY_NAME[i],
-              PLACE_OF_SUPPLY: envelope.PLACE_OF_SUPPLY[i],
-              IS_INVOICE: envelope.IS_INVOICE[i],
-              IS_ACCOUNTING_VOUCHER: envelope.IS_ACCOUNTING_VOUCHER[i],
-              IS_INVENTORY_VOUCHER: envelope.IS_INVENTORY_VOUCHER[i],
-              IS_ORDER_VOUCHER: envelope.IS_ORDER_VOUCHER[i],
-            };
-            voucherArray.push(voucher);
-          }
-
-          resolve(voucherArray);
-        }
-      });
-    });
-  }
-
-  parseSuccessSyncVoucherData(xmlData: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-      parseString(xmlData, (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          // Extract the relevant information from the parsed XML
-          const parsedResponse: ParsedResponse = {
-            HEADER: result.ENVELOPE.HEADER[0],
-            IMPORTRESULT: result.ENVELOPE.BODY[0].DATA[0].IMPORTRESULT[0],
-            CMPINFO: result.ENVELOPE.BODY[0].DESC[0].CMPINFO[0],
-            // Add other properties from the XML if needed...
-          };
-
-          // You can return an array of objects if you expect multiple responses in the future
-          resolve(parsedResponse);
-        }
-      });
-    });
-  }
-
-  parseXmlUomToObjectArray(xml: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-      parseString(xml, (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          const envelope = result.ENVELOPE;
-          const uomArray = [];
-
-          const numUoms = envelope.GUID.length;
-
-          for (let i = 0; i < numUoms; i++) {
-            const obj: ParsedObject = {
-              GUID: result.ENVELOPE.GUID[i],
-              ALTERID: result.ENVELOPE.ALTERID[i],
-              NAME: result.ENVELOPE.NAME[i],
-              FORMALNAME: result.ENVELOPE.FORMALNAME[i],
-              ISSIMPLEUNIT: result.ENVELOPE.ISSIMPLEUNIT[i],
-              BASEUNITS: result.ENVELOPE.BASEUNITS[i],
-              ADDITIONALUNITS: result.ENVELOPE.ADDITIONALUNITS[i],
-              CONVERSION: result.ENVELOPE.CONVERSION[i],
-            };
-            uomArray.push(obj);
-          }
-          resolve(uomArray);
-        }
-      });
-    });
-  }
-
-  parseExtraStockXmlToObjects(xmlData: any): Promise<any> {
-    return new Promise((resolve, reject) => {
-      parseString(xmlData, (err, result) => {
-        if (err) {
+          console.log(err);
           reject(err);
         } else {
           const envelope = result.ENVELOPE;
           const productArray = [];
-          const data = envelope.BODY[0].DATA[0].TALLYMESSAGE;
-          const filteredData = data.filter((item: any) => 'STOCKITEM' in item);
-          const numProducts = filteredData.length;
-          for (let i = 0; i < numProducts; i++) {
-            const stateWiseGst =
-              filteredData[i].STOCKITEM[0]['GSTDETAILS.LIST'][
-                filteredData[i].STOCKITEM[0]['GSTDETAILS.LIST'].length - 1
-              ]['STATEWISEDETAILS.LIST'];
-            const batchDetails =
-              filteredData[i].STOCKITEM[0]['BATCHALLOCATIONS.LIST'];
-            // console.log(typeof batchDetails[0]);
-            const processedData = this.processBatchDetails(batchDetails);
-            // console.log(processedData);
-            // const mainLocationBatchObject =
-            //   batchDetails && batchDetails.length === 2
-            //     ? batchDetails.filter(
-            //         (item: any) => item.GODOWNNAME[0] === 'Main Location',
-            //       )
-            //     : null;
 
-            const retailerMargin = filteredData[i].STOCKITEM[0][
-              'UDF:_UDF_671088731.LIST'
-            ]
-              ? filteredData[i].STOCKITEM[0]['UDF:_UDF_671088731.LIST'][0][
-                  'UDF:_UDF_671088731'
-                ][0]['_']
-              : 0;
-            const distributorMargin = filteredData[i].STOCKITEM[0][
-              'UDF:_UDF_671088732.LIST'
-            ]
-              ? filteredData[i].STOCKITEM[0]['UDF:_UDF_671088732.LIST'][0][
-                  'UDF:_UDF_671088732'
-                ][0]['_']
-              : 0;
-            const cgst = stateWiseGst
-              ? stateWiseGst[0]['RATEDETAILS.LIST'][0]['GSTRATE'][0]
-              : '0';
-            const sgstOrUtgst = stateWiseGst
-              ? stateWiseGst[0]['RATEDETAILS.LIST'][1]['GSTRATE'][0]
-              : '0';
-            const igst = stateWiseGst
-              ? stateWiseGst[0]['RATEDETAILS.LIST'][2]['GSTRATE'][0]
-              : '0';
-            const cess = stateWiseGst
-              ? stateWiseGst[0]['RATEDETAILS.LIST'][3]['GSTRATE'][0]
-              : '0';
-            const stateCess = stateWiseGst
-              ? stateWiseGst[0]['RATEDETAILS.LIST'][3]['GSTRATE'][0]
-              : '0';
-            const productExtra: any = {
-              guid: filteredData[i].STOCKITEM[0].GUID[0],
-              cgst: cgst.trim(),
-              sgstOrUtgst: sgstOrUtgst.trim(),
-              igst: igst.trim(),
-              cess: cess.trim(),
-              stateCess: stateCess.trim(),
-              retailerMargin: retailerMargin ? retailerMargin.trim() : '0',
-              distributorMargin: distributorMargin
-                ? distributorMargin.trim()
-                : '0',
-              batchName: processedData || 0,
+          const data = envelope.BODY[0].DATA[0].COLLECTION[0].VOUCHER;
+          const formattedArray = data.map((res: any) => {
+            let orderData = [];
+            if (
+              res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'].length &&
+              res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'].length > 0
+            ) {
+              for (
+                let i = 0;
+                i <
+                res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'].length;
+                i++
+              ) {
+                const item = {
+                  name: res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'][
+                    i
+                  ]['UDF:SSITEMNAME.LIST'][0]['UDF:SSITEMNAME'][0]['_'],
+                  SortingFlag:
+                    res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'][i][
+                      'UDF:SSSORTINGFLAG.LIST'
+                    ][0]['UDF:SSSORTINGFLAG'][0]['_'],
+                  // PercentGST:
+                  //   `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'][i]['UDF:SSITEMGST.LIST'][0]['UDF:SSITEMGST'][0]['_']}`.trim(),
+                  PercentGST:
+                    `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'][i]['UDF:SSPERCENTGST.LIST'][0]['UDF:SSPERCENTGST'][0]['_']}`.trim(),
+                  Rate: `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'][i]['UDF:SSUNITPTR.LIST'][0]['UDF:SSUNITPTR'][0]['_']}`.trim(),
+                  unitMrp:
+                    `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'][i]['UDF:SSUNITMRP.LIST'][0]['UDF:SSUNITMRP'][0]['_']}`.trim(),
+                  BilledQuantity:
+                    `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'][i]['UDF:SSQUANTITY.LIST'][0]['UDF:SSQUANTITY'][0]['_']}`.trim(),
+                  FreeQuantity: res['UDF:SSORDERDATA.LIST'][0][
+                    'UDF:SSORDERITEMS.LIST'
+                  ][i]['UDF:SSITEMFREE.LIST']
+                    ? `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'][i]['UDF:SSITEMFREE.LIST'][0]['UDF:SSITEMFREE'][0]['_']}`.trim()
+                    : '',
+                  SchemeAmount: res['UDF:SSORDERDATA.LIST'][0][
+                    'UDF:SSORDERITEMS.LIST'
+                  ][i]['UDF:SSSCHEMENAME.LIST']
+                    ? `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'][i]['UDF:SSSCHEMENAME.LIST'][0]['UDF:SSSCHEMENAME'][0]['_']}`.trim()
+                    : '',
+                  SchemeName: res['UDF:SSORDERDATA.LIST'][0][
+                    'UDF:SSORDERITEMS.LIST'
+                  ][i]['UDF:SSSCHEMENAME.LIST']
+                    ? `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'][i]['UDF:SSSCHEMENAME.LIST'][0]['UDF:SSSCHEMENAME'][0]['_']}`.trim()
+                    : '',
+                  TaxableAmount: res['UDF:SSORDERDATA.LIST'][0][
+                    'UDF:SSORDERITEMS.LIST'
+                  ][i]['UDF:SSTOTALITEMPRICE.LIST']
+                    ? `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'][i]['UDF:SSTOTALITEMPRICE.LIST'][0]['UDF:SSTOTALITEMPRICE'][0]['_']}`.trim()
+                    : '',
+                  Amount: res['UDF:SSORDERDATA.LIST'][0][
+                    'UDF:SSORDERITEMS.LIST'
+                  ][i]['UDF:SSTOTALITEMPRICE.LIST']
+                    ? `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'][i]['UDF:SSTOTALITEMPRICE.LIST'][0]['UDF:SSTOTALITEMPRICE'][0]['_']}`.trim()
+                    : '',
+                };
+                orderData.push(item);
+              }
+            }
+            return {
+              DeliveryRoute:
+                res['UDF:SSORDERDATA.LIST'][0]['UDF:SSVEHICLEROUTE.LIST'][0][
+                  'UDF:SSVEHICLEROUTE'
+                ][0]['_'],
+              Items: orderData,
+              TotalAmount: `${Math.abs(
+                res['LEDGERENTRIES.LIST'][0]['AMOUNT'][0],
+              )}`.trim(),
+              totalGst:
+                `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSTOTALGST.LIST'][0]['UDF:SSTOTALGST'][0]['_']}`.trim(),
+              shopName:
+                `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSSHOPNAME.LIST'][0]['UDF:SSSHOPNAME'][0]['_']}`.trim(),
+              OrderRefNo:
+                `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSINVOICEID.LIST'][0]['UDF:SSINVOICEID'][0]['_']}`.trim(),
+              InvoiceNumber: `${res['VOUCHERNUMBER'][0]}`.trim(),
+              ShopPincode: `${res['PARTYPINCODE'][0]}`.trim(),
+              GSTINUIN: `${res['PARTYGSTIN'][0]}`.trim(),
+              invoiceDate:
+                `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSINVOICEDATE.LIST'][0]['UDF:SSINVOICEDATE'][0]['_']}`.trim(),
+              orderId:
+                `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERID.LIST'][0]['UDF:SSORDERID'][0]['_']}`.trim(),
+              salesPerson:
+                `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSSALESPERSON.LIST'][0]['UDF:SSSALESPERSON'][0]['_']}`.trim(),
+              irnAckDate: `${res['IRNACKDATE'][0]}`.trim(),
+              irnNumber: `${res['IRN'][0]}`.trim(),
+              irnQrCode: `${res['IRNQRCODE'][0]}`.trim(),
+              irnAckCode: `${res['IRNACKNO'][0]}`.trim(),
+              ewayBillNumber: `${
+                res['EWAYBILLDETAILS.LIST'][0]['BILLNUMBER']
+                  ? res['EWAYBILLDETAILS.LIST'][0]['BILLNUMBER']
+                  : ''
+              }`.trim(),
+              ewayBillDate: `${
+                res['EWAYBILLDETAILS.LIST'][0]['BILLDATE']
+                  ? res['EWAYBILLDETAILS.LIST'][0]['BILLDATE']
+                  : ''
+              }`.trim(),
             };
-            productArray.push(productExtra);
-          }
-          resolve(productArray);
+          });
+          resolve(formattedArray);
         }
       });
     });
   }
 
-  processBatchDetails(batchDetails: any) {
-    const finalBatchStringArray: any = [];
-    if (typeof batchDetails[0] !== 'string') {
-      const batchArray = batchDetails.filter(
-        (item: any) => item.GODOWNNAME[0] === 'Main Location',
-      );
-      if (batchArray.length > 0) {
-        batchArray.forEach((element: any) => {
-          console.log(element);
-          console.log('here');
-          finalBatchStringArray.push(element.BATCHNAME[0]);
-        });
-      }
-    }
-    return finalBatchStringArray.toString().length > 0
-      ? finalBatchStringArray.toString()
-      : '';
+  parseVouchers1(xmlData: any): Promise<any> {
+    return new Promise((resolve, reject) => {
+      parseString(xmlData, (err, result) => {
+        if (err) {
+          console.log(err);
+          reject(err);
+        } else {
+          const envelope = result.ENVELOPE;
+          const productArray = [];
+
+          const data = envelope.BODY[0].DATA[0].COLLECTION[0].VOUCHER;
+
+          resolve(data);
+        }
+      });
+    });
   }
 }

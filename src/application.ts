@@ -4,7 +4,6 @@ import {
 } from '@loopback/authentication';
 import {BootMixin} from '@loopback/boot';
 import {ApplicationConfig} from '@loopback/core';
-import {CronComponent} from '@loopback/cron';
 import {RepositoryMixin} from '@loopback/repository';
 import {RestApplication} from '@loopback/rest';
 import {
@@ -38,7 +37,8 @@ export class FoodExpressApplication extends BootMixin(
     this.setUpBinding();
 
     this.component(AuthenticationComponent);
-    this.component(CronComponent);
+    //uncomment below for running the cron
+    // this.component(CronComponent);
     registerAuthenticationStrategy(this, JWTStrategy);
 
     // Set up default home page

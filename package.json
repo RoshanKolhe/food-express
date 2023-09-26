@@ -1,7 +1,7 @@
 {
   "name": "food-express",
   "version": "0.0.1",
-  "description": "htdocs",
+  "description": "food-express",
   "keywords": [
     "loopback-application",
     "loopback"
@@ -40,7 +40,7 @@
     "type": "git",
     "url": ""
   },
-  "author": "RoshanKolhe <kolheroshan508@gmail.com>",
+  "author": "FoodExpress",
   "license": "",
   "files": [
     "README.md",
@@ -58,6 +58,8 @@
     "@loopback/rest-explorer": "^5.0.7",
     "@loopback/service-proxy": "^5.0.7",
     "bcryptjs": "^2.4.3",
+    "fs": "0.0.1-security",
+    "fs-extra": "^11.1.1",
     "isemail": "^3.2.0",
     "jsonwebtoken": "^8.5.1",
     "loopback-connector-mysql": "^5.4.4",
