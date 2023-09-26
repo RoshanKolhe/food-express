@@ -80,3 +80,76 @@ export interface ParsedObject {
   ADDITIONALUNITS: string;
   CONVERSION: string;
 }
+
+export interface InputItem {
+  deliveryRoute: string;
+  name: string;
+  PercentGST: string;
+  BilledQuantity: string;
+  FreeQuantity: string;
+  Rate: string;
+  SchemeAmount: string;
+  SchemeName: string;
+  DiscountPercent: string;
+  TaxableAmount: string;
+  CGSTAmount: string;
+  SGSTAmount: string;
+  Amount: string;
+  SortingFlag: string;
+  RoundOFF: string;
+}
+
+export interface OutputItem {
+  ItemName: string;
+  ItemCode: string; // Not important, you can add it if needed
+  PercentGST: number;
+  BilledQuantity: number;
+  FreeQuantity: number;
+  Rate: number;
+  SchemeAmount: string;
+  SchemeName: string;
+  DiscountPercent: number;
+  TaxableAmount: number;
+  CGSTAmount: number;
+  SGSTAmount: number;
+  Amount: number;
+  SortingFlag: number;
+  RoundOFF: number;
+}
+
+export interface OutputInvoice {
+  OrderRefNo: string;
+  InvoiceNumber: string;
+  InvoiceDate: string;
+  Salesperson: string;
+  ShopName: string;
+  ShopPincode: string;
+  GSTIN_UIN: string;
+  IRNNumber: string;
+  IRNQRCode: string;
+  IRNAcknowledgementNo: string;
+  IRNAcknowledgementDate: string;
+  EwayBillNumber: string;
+  EwayBillDate: string;
+  TotalAmount: number;
+  TotalBilledQTY: number;
+  TotalTaxableAmount: number;
+  TotalFreeQTY: number;
+  TotalCGSTAmount: number;
+  TotalSGSTAmount: number;
+  Items: OutputItem[];
+}
+
+export interface OutputRoute {
+  DeliveryRoute: string;
+  Invoices: OutputInvoice[];
+}
+
+export interface OutputData {
+  Status: number;
+  Message: string;
+  Data: {
+    Count: number;
+    Routes: OutputRoute[];
+  };
+}

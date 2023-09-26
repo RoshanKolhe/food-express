@@ -14,13 +14,12 @@ import {
   response,
 } from '@loopback/rest';
 import {UserProfile} from '@loopback/security';
+import * as fs from 'fs';
 import * as _ from 'lodash';
+import {promisify} from 'util';
 import {PermissionKeys} from '../authorization/permission-keys';
 import {ACTIVE_COMPANY_TALLY_XML} from '../helpers/getActiveCompanyTallyXml';
 import {EmailManagerBindings} from '../keys';
-import {promisify} from 'util';
-import * as fs from 'fs';
-import * as fsExtra from 'fs-extra';
 import {User} from '../models';
 import {Credentials, UserRepository} from '../repositories';
 import {EmailManager} from '../services/email.service';
@@ -31,6 +30,12 @@ import {MyUserService} from '../services/user-service';
 import {validateCredentials} from '../services/validator';
 import generateOtpTemplate from '../templates/otp.template';
 import SITE_SETTINGS from '../utils/config';
+import {
+  OutputData,
+  OutputInvoice,
+  OutputItem,
+  OutputRoute,
+} from '../utils/constants';
 import {CredentialsRequestBody} from './specs/user-controller-spec';
 
 export class UserController {
@@ -342,7 +347,74 @@ export class UserController {
       const tallyXml = await readFileAsync('./public/response.xml', 'utf-8');
       // const res: any = await this.tallyPostService.postTallyXML(tallyXml);
       const parsedXmlData = await this.tallyPostService.parseVouchers(tallyXml);
-      return parsedXmlData;
+      const outputData: OutputData = {
+        Status: 200,
+        Message: 'Success',
+        Data: {
+          Count: parsedXmlData.length,
+          Routes: [],
+        },
+      };
+
+      const groupedData: {[route: string]: OutputRoute} = {};
+      parsedXmlData.forEach((item: any) => {
+        if (!groupedData[item.DeliveryRoute]) {
+          groupedData[item.DeliveryRoute] = {
+            DeliveryRoute: item.DeliveryRoute,
+            Invoices: [],
+          };
+        }
+
+        const invoiceData: OutputInvoice = {
+          OrderRefNo: item['OrderRefNo'],
+          InvoiceNumber: item['InvoiceNumber'],
+          InvoiceDate: item['invoiceDate'],
+          Salesperson: item['salesPerson'],
+          ShopName: item['shopName'],
+          ShopPincode: item['ShopPincode'],
+          GSTIN_UIN: item['GSTINUIN'],
+          IRNNumber: item['irnNumber'],
+          IRNQRCode: item['irnQrCode'],
+          IRNAcknowledgementNo: item['irnAckCode'],
+          IRNAcknowledgementDate: item['irnAckDate'],
+          EwayBillNumber: item['ewayBillNumber'],
+          EwayBillDate: item['ewayBillDate'],
+          TotalAmount: parseFloat(item['TotalAmount']),
+          TotalBilledQTY: parseInt(item['TotalBilledQTY']),
+          TotalTaxableAmount: parseFloat(item['TotalAmount']),
+          TotalFreeQTY: parseInt(item['TotalFreeQTY']),
+          TotalCGSTAmount: parseFloat(item['TotalCGSTAmount']),
+          TotalSGSTAmount: parseFloat(item['TotalSGSTAmount']),
+          Items: [],
+        };
+        console.log(invoiceData);
+
+        item['Items'].forEach((res: any) => {
+          const itemData: OutputItem = {
+            ItemName: res['ItemName'],
+            ItemCode: res['ItemCode'],
+            PercentGST: parseFloat(res['PercentGST']),
+            BilledQuantity: parseInt(res['BilledQuantity']),
+            FreeQuantity: parseInt(res['FreeQuantity']),
+            Rate: parseFloat(res['Rate']),
+            SchemeAmount: res['SchemeAmount'],
+            SchemeName: res['SchemeName'],
+            DiscountPercent: parseFloat(res['DiscountPercent']),
+            TaxableAmount: parseFloat(res['TaxableAmount']),
+            CGSTAmount: parseFloat(res['CGSTAmount']),
+            SGSTAmount: parseFloat(res['SGSTAmount']),
+            Amount: parseFloat(res['Amount']),
+            SortingFlag: res['SortingFlag'],
+            RoundOFF: parseFloat(res['RoundOFF']),
+          };
+          invoiceData.Items.push(itemData);
+        });
+
+        groupedData[item.DeliveryRoute].Invoices.push(invoiceData);
+      });
+
+      outputData.Data.Routes = Object.values(groupedData);
+      return outputData;
     } catch (error) {
       console.log(error);
       if (error.code === 'ECONNREFUSED' || error.code === 'EHOSTUNREACH') {
@@ -370,7 +442,9 @@ export class UserController {
       const readFileAsync = promisify(fs.readFile);
       const tallyXml = await readFileAsync('./public/response.xml', 'utf-8');
       // const res: any = await this.tallyPostService.postTallyXML(tallyXml);
-      const parsedXmlData = await this.tallyPostService.parseVouchers1(tallyXml);
+      const parsedXmlData = await this.tallyPostService.parseVouchers1(
+        tallyXml,
+      );
       return parsedXmlData;
     } catch (error) {
       console.log(error);
