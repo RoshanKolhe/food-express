@@ -106,7 +106,7 @@ export interface OutputItem {
   BilledQuantity: number;
   FreeQuantity: number;
   Rate: number;
-  SchemeAmount: string;
+  SchemeAmount: number;
   SchemeName: string;
   DiscountPercent: number;
   TaxableAmount: number;

@@ -54,7 +54,6 @@ export class TallyHttpCallService {
         if (err) {
           reject(err);
         } else {
-          console.log(result);
           const envelope =
             result.ENVELOPE.BODY[0].DATA[0].COLLECTION[0].COMPANY[0];
           const finalActiveCompanyData = {
@@ -82,9 +81,14 @@ export class TallyHttpCallService {
           const productArray = [];
 
           const data = envelope.BODY[0].DATA[0].COLLECTION[0].VOUCHER;
+          console.log(envelope.BODY[0].DATA[0].COLLECTION[0])
           const formattedArray = data.map((res: any) => {
             let orderData = [];
+            let totalBilledQty = 0;
+            let totalTaxableAmt = 0;
+            let totalFreeQty = 0;
             if (
+              res['UDF:SSORDERDATA.LIST'] &&
               res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'].length &&
               res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'].length > 0
             ) {
@@ -94,6 +98,23 @@ export class TallyHttpCallService {
                 res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'].length;
                 i++
               ) {
+                totalBilledQty += parseFloat(
+                  `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'][i]['UDF:SSQUANTITY.LIST'][0]['UDF:SSQUANTITY'][0]['_']}`.trim(),
+                );
+                totalTaxableAmt += parseFloat(
+                  res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'][i][
+                    'UDF:SSTOTALITEMPRICE.LIST'
+                  ]
+                    ? `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'][i]['UDF:SSTOTALITEMPRICE.LIST'][0]['UDF:SSTOTALITEMPRICE'][0]['_']}`.trim()
+                    : '0',
+                );
+                totalFreeQty += parseFloat(
+                  res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'][i][
+                    'UDF:SSITEMFREE.LIST'
+                  ]
+                    ? `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'][i]['UDF:SSITEMFREE.LIST'][0]['UDF:SSITEMFREE'][0]['_']}`.trim()
+                    : '0',
+                );
                 const item = {
                   name: res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'][
                     i
@@ -118,9 +139,10 @@ export class TallyHttpCallService {
                     : '',
                   SchemeAmount: res['UDF:SSORDERDATA.LIST'][0][
                     'UDF:SSORDERITEMS.LIST'
-                  ][i]['UDF:SSSCHEMENAME.LIST']
-                    ? `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'][i]['UDF:SSSCHEMENAME.LIST'][0]['UDF:SSSCHEMENAME'][0]['_']}`.trim()
-                    : '',
+                  ][i]['UDF:SSDISCAMOUNT.LIST']
+                    ? `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERITEMS.LIST'][i]['UDF:SSDISCAMOUNT.LIST'][0]['UDF:SSDISCAMOUNT'][0]['_']}`.trim()
+                    : 0,
+
                   SchemeName: res['UDF:SSORDERDATA.LIST'][0][
                     'UDF:SSORDERITEMS.LIST'
                   ][i]['UDF:SSSCHEMENAME.LIST']
@@ -140,30 +162,38 @@ export class TallyHttpCallService {
                 orderData.push(item);
               }
             }
+
             return {
-              DeliveryRoute:
-                res['UDF:SSORDERDATA.LIST'][0]['UDF:SSVEHICLEROUTE.LIST'][0][
-                  'UDF:SSVEHICLEROUTE'
-                ][0]['_'],
+              DeliveryRoute: res['UDF:SSORDERDATA.LIST']
+                ? res['UDF:SSORDERDATA.LIST'][0]['UDF:SSVEHICLEROUTE.LIST'][0][
+                    'UDF:SSVEHICLEROUTE'
+                  ][0]['_']
+                : '',
               Items: orderData,
               TotalAmount: `${Math.abs(
                 res['LEDGERENTRIES.LIST'][0]['AMOUNT'][0],
               )}`.trim(),
-              totalGst:
-                `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSTOTALGST.LIST'][0]['UDF:SSTOTALGST'][0]['_']}`.trim(),
-              shopName:
-                `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSSHOPNAME.LIST'][0]['UDF:SSSHOPNAME'][0]['_']}`.trim(),
-              OrderRefNo:
-                `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSINVOICEID.LIST'][0]['UDF:SSINVOICEID'][0]['_']}`.trim(),
+              totalGst: res['UDF:SSORDERDATA.LIST']
+                ? `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSTOTALGST.LIST'][0]['UDF:SSTOTALGST'][0]['_']}`.trim()
+                : '0',
+              shopName: res['UDF:SSORDERDATA.LIST']
+                ? `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSSHOPNAME.LIST'][0]['UDF:SSSHOPNAME'][0]['_']}`.trim()
+                : '',
+              OrderRefNo: res['UDF:SSORDERDATA.LIST']
+                ? `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSINVOICEID.LIST'][0]['UDF:SSINVOICEID'][0]['_']}`.trim()
+                : '',
               InvoiceNumber: `${res['VOUCHERNUMBER'][0]}`.trim(),
               ShopPincode: `${res['PARTYPINCODE'][0]}`.trim(),
               GSTINUIN: `${res['PARTYGSTIN'][0]}`.trim(),
-              invoiceDate:
-                `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSINVOICEDATE.LIST'][0]['UDF:SSINVOICEDATE'][0]['_']}`.trim(),
-              orderId:
-                `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERID.LIST'][0]['UDF:SSORDERID'][0]['_']}`.trim(),
-              salesPerson:
-                `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSSALESPERSON.LIST'][0]['UDF:SSSALESPERSON'][0]['_']}`.trim(),
+              invoiceDate: res['UDF:SSORDERDATA.LIST']
+                ? `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSINVOICEDATE.LIST'][0]['UDF:SSINVOICEDATE'][0]['_']}`.trim()
+                : '',
+              orderId: res['UDF:SSORDERDATA.LIST']
+                ? `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSORDERID.LIST'][0]['UDF:SSORDERID'][0]['_']}`.trim()
+                : '',
+              salesPerson: res['UDF:SSORDERDATA.LIST']
+                ? `${res['UDF:SSORDERDATA.LIST'][0]['UDF:SSSALESPERSON.LIST'][0]['UDF:SSSALESPERSON'][0]['_']}`.trim()
+                : '',
               irnAckDate: `${res['IRNACKDATE'][0]}`.trim(),
               irnNumber: `${res['IRN'][0]}`.trim(),
               irnQrCode: `${res['IRNQRCODE'][0]}`.trim(),
@@ -178,6 +208,9 @@ export class TallyHttpCallService {
                   ? res['EWAYBILLDETAILS.LIST'][0]['BILLDATE']
                   : ''
               }`.trim(),
+              TotalBilledQTY: totalBilledQty,
+              TotalFreeQTY: totalFreeQty,
+              TotalTaxableAmount: totalTaxableAmt.toFixed(2),
             };
           });
           resolve(formattedArray);

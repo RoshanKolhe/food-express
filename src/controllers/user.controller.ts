@@ -19,6 +19,7 @@ import * as _ from 'lodash';
 import {promisify} from 'util';
 import {PermissionKeys} from '../authorization/permission-keys';
 import {ACTIVE_COMPANY_TALLY_XML} from '../helpers/getActiveCompanyTallyXml';
+import {ALL_VOUCHERS_DATA} from '../helpers/getAllVouchers';
 import {EmailManagerBindings} from '../keys';
 import {User} from '../models';
 import {Credentials, UserRepository} from '../repositories';
@@ -341,12 +342,13 @@ export class UserController {
     options: {required: [PermissionKeys.SALES]},
   })
   @get('/api/getTallyVouchers')
-  async getTallyVouchers(): Promise<any> {
+  async getTallyVouchers(@requestBody() requestData: any): Promise<any> {
     try {
-      const readFileAsync = promisify(fs.readFile);
-      const tallyXml = await readFileAsync('./public/response.xml', 'utf-8');
-      // const res: any = await this.tallyPostService.postTallyXML(tallyXml);
-      const parsedXmlData = await this.tallyPostService.parseVouchers(tallyXml);
+      // const readFileAsync = promisify(fs.readFile);
+      // const tallyXml = await readFileAsync('./public/response.xml', 'utf-8');
+      const tallyXml = ALL_VOUCHERS_DATA(requestData);
+      const res: any = await this.tallyPostService.postTallyXML(tallyXml);
+      const parsedXmlData = await this.tallyPostService.parseVouchers(res);
       const outputData: OutputData = {
         Status: 200,
         Message: 'Success',
@@ -380,14 +382,13 @@ export class UserController {
           EwayBillNumber: item['ewayBillNumber'],
           EwayBillDate: item['ewayBillDate'],
           TotalAmount: parseFloat(item['TotalAmount']),
-          TotalBilledQTY: parseInt(item['TotalBilledQTY']),
-          TotalTaxableAmount: parseFloat(item['TotalAmount']),
-          TotalFreeQTY: parseInt(item['TotalFreeQTY']),
+          TotalBilledQTY: parseFloat(item['TotalBilledQTY']),
+          TotalTaxableAmount: parseFloat(item['TotalTaxableAmount']),
+          TotalFreeQTY: parseFloat(item['TotalFreeQTY']),
           TotalCGSTAmount: parseFloat(item['TotalCGSTAmount']),
           TotalSGSTAmount: parseFloat(item['TotalSGSTAmount']),
           Items: [],
         };
-        console.log(invoiceData);
 
         item['Items'].forEach((res: any) => {
           const itemData: OutputItem = {
@@ -397,7 +398,7 @@ export class UserController {
             BilledQuantity: parseInt(res['BilledQuantity']),
             FreeQuantity: parseInt(res['FreeQuantity']),
             Rate: parseFloat(res['Rate']),
-            SchemeAmount: res['SchemeAmount'],
+            SchemeAmount: parseFloat(res['SchemeAmount']),
             SchemeName: res['SchemeName'],
             DiscountPercent: parseFloat(res['DiscountPercent']),
             TaxableAmount: parseFloat(res['TaxableAmount']),
